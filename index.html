@@ -859,7 +859,10 @@
       const list = document.getElementById('treinos-list');
       list.innerHTML = '';
 
-      Object.values(treinos).forEach(treino => {
+      const ordem = ['treino_a', 'treino_b', 'treino_c', 'treino_d'];
+      ordem.forEach(id => {
+        const treino = treinos[id];
+        if (!treino) return;
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
