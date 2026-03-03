@@ -114,8 +114,19 @@
     }
 
     .card-status.em-andamento {
+      background: #ddd;
+      color: #666;
+    }
+
+    .card-status.em-atual {
       background: #B22222;
       color: white;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
     }
 
     .card-muscles {
@@ -847,6 +858,12 @@
       if (dados) {
         Object.assign(treinos.treino_a, JSON.parse(dados));
       }
+      
+      // Carregar treino ativo
+      const ativoId = localStorage.getItem('treino_ativo');
+      if (!ativoId) {
+        localStorage.setItem('treino_ativo', 'treino_a');
+      }
     }
 
     // Salvar localStorage
@@ -860,9 +877,20 @@
       list.innerHTML = '';
 
       const ordem = ['treino_a', 'treino_b', 'treino_c', 'treino_d'];
+      const ativoId = localStorage.getItem('treino_ativo');
+      
       ordem.forEach(id => {
         const treino = treinos[id];
         if (!treino) return;
+        
+        let statusText = 'Em andamento';
+        let statusClass = 'em-andamento';
+        
+        if (id === ativoId) {
+          statusText = 'Em Atual';
+          statusClass = 'em-atual';
+        }
+        
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -871,15 +899,21 @@
               <div class="card-title">${treino.nome}</div>
               <div style="font-size: 12px; color: #999; margin-top: 4px;">${treino.descricao}</div>
             </div>
-            <span class="card-status ${treino.status}">${treino.status === 'em-andamento' ? '⏱️ Em andamento' : '✓ Completo'}</span>
+            <span class="card-status ${statusClass}">⏱️ ${statusText}</span>
           </div>
           <div class="card-muscles">
             ${treino.grupos_musculares.map(m => `<span class="muscle-tag">💪 ${m}</span>`).join('')}
           </div>
         `;
-        card.onclick = () => verTreino(treino.id);
+        card.onclick = () => ativarTreino(id);
         list.appendChild(card);
       });
+    }
+    
+    function ativarTreino(id) {
+      localStorage.setItem('treino_ativo', id);
+      renderHome();
+      verTreino(id);
     }
 
     // Ver treino
