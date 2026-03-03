@@ -113,7 +113,7 @@
       white-space: nowrap;
     }
 
-    .card-status.em-andamento {
+    .card-status.proximo {
       background: #ddd;
       color: #666;
     }
@@ -122,6 +122,11 @@
       background: #B22222;
       color: white;
       animation: pulse 1.5s infinite;
+    }
+
+    .card-status.completo {
+      background: #4caf50;
+      color: white;
     }
 
     @keyframes pulse {
@@ -864,6 +869,36 @@
       if (!ativoId) {
         localStorage.setItem('treino_ativo', 'treino_a');
       }
+      
+      // Inicializar completados
+      if (!localStorage.getItem('treinos_completados')) {
+        localStorage.setItem('treinos_completados', JSON.stringify([]));
+      }
+    }
+    
+    function getTreino(id) {
+      const ordem = ['treino_a', 'treino_b', 'treino_c', 'treino_d'];
+      return ordem.indexOf(id);
+    }
+    
+    function proximoTreino() {
+      const ordem = ['treino_a', 'treino_b', 'treino_c', 'treino_d'];
+      const completados = JSON.parse(localStorage.getItem('treinos_completados') || '[]');
+      
+      for (let id of ordem) {
+        if (!completados.includes(id)) {
+          return id;
+        }
+      }
+      return null;
+    }
+    
+    function marcarTreinoCompleto(id) {
+      const completados = JSON.parse(localStorage.getItem('treinos_completados') || '[]');
+      if (!completados.includes(id)) {
+        completados.push(id);
+      }
+      localStorage.setItem('treinos_completados', JSON.stringify(completados));
     }
 
     // Salvar localStorage
@@ -878,34 +913,44 @@
 
       const ordem = ['treino_a', 'treino_b', 'treino_c', 'treino_d'];
       const ativoId = localStorage.getItem('treino_ativo');
+      const completados = JSON.parse(localStorage.getItem('treinos_completados') || '[]');
+      const proximo = proximoTreino();
       
       ordem.forEach(id => {
         const treino = treinos[id];
         if (!treino) return;
         
-        let statusText = 'Em andamento';
-        let statusClass = 'em-andamento';
+        let statusText = 'Próximo';
+        let statusClass = 'proximo';
+        let clickable = true;
         
-        if (id === ativoId) {
+        if (completados.includes(id)) {
+          statusText = 'Completo';
+          statusClass = 'completo';
+          clickable = false;
+        } else if (id === proximo) {
           statusText = 'Em Atual';
           statusClass = 'em-atual';
         }
         
         const card = document.createElement('div');
         card.className = 'card';
+        card.style.opacity = clickable ? '1' : '0.6';
         card.innerHTML = `
           <div class="card-header">
             <div>
               <div class="card-title">${treino.nome}</div>
               <div style="font-size: 12px; color: #999; margin-top: 4px;">${treino.descricao}</div>
             </div>
-            <span class="card-status ${statusClass}">⏱️ ${statusText}</span>
+            <span class="card-status ${statusClass}">${statusClass === 'completo' ? '✓' : '⏱️'} ${statusText}</span>
           </div>
           <div class="card-muscles">
             ${treino.grupos_musculares.map(m => `<span class="muscle-tag">💪 ${m}</span>`).join('')}
           </div>
         `;
-        card.onclick = () => ativarTreino(id);
+        card.onclick = () => {
+          if (clickable) ativarTreino(id);
+        };
         list.appendChild(card);
       });
     }
@@ -919,7 +964,9 @@
     // Ver treino
     function verTreino(treinoId) {
       const treino = treinos[treinoId];
-      document.getElementById('treino-title').textContent = treino.nome;
+      const titleEl = document.getElementById('treino-title');
+      titleEl.textContent = treino.nome;
+      titleEl.setAttribute('data-treino-id', treinoId);
       renderExercicios(treino);
 
       document.getElementById('home').classList.remove('active');
@@ -1031,8 +1078,20 @@
     }
 
     function finalizarTreino() {
-      alert('✓ Treino finalizado! Bom trabalho! 💪');
-      voltar();
+      const treinoId = document.getElementById('treino-title').getAttribute('data-treino-id');
+      
+      marcarTreinoCompleto(treinoId);
+      
+      const proximo = proximoTreino();
+      if (proximo) {
+        alert('✓ Treino finalizado! Bom trabalho! 💪\n\nPróximo: ' + treinos[proximo].nome);
+        localStorage.setItem('treino_ativo', proximo);
+        renderHome();
+        verTreino(proximo);
+      } else {
+        alert('🏆 PARABÉNS! Você completou todos os treinos! 💪');
+        voltar();
+      }
     }
 
     // Inicializar
