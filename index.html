@@ -859,10 +859,13 @@
 
     // Carregar localStorage
     function carregarDados() {
-      const dados = localStorage.getItem('treino_data');
-      if (dados) {
-        Object.assign(treinos.treino_a, JSON.parse(dados));
-      }
+      // Carregar dados salvos de TODOS os treinos
+      ['treino_a', 'treino_b', 'treino_c', 'treino_d'].forEach(id => {
+        const dados = localStorage.getItem(`treino_${id}_data`);
+        if (dados && treinos[id]) {
+          Object.assign(treinos[id], JSON.parse(dados));
+        }
+      });
       
       // Carregar treino ativo
       const ativoId = localStorage.getItem('treino_ativo');
@@ -963,6 +966,12 @@
 
     // Ver treino
     function verTreino(treinoId) {
+      // Carregar dados salvos desse treino
+      const dadosSalvos = localStorage.getItem(`treino_${treinoId}_data`);
+      if (dadosSalvos) {
+        Object.assign(treinos[treinoId], JSON.parse(dadosSalvos));
+      }
+      
       const treino = treinos[treinoId];
       const titleEl = document.getElementById('treino-title');
       titleEl.textContent = treino.nome;
@@ -1038,12 +1047,14 @@
       const serieNum = parseInt(e.target.dataset.serie);
       const carga = parseFloat(e.target.value) || 0;
 
-      const treino = treinos.treino_a;
+      const treinoId = document.getElementById('treino-title').getAttribute('data-treino-id');
+      const treino = treinos[treinoId];
       const ex = treino.exercicios.find(x => x.id === exId);
       const serie = ex.series.find(s => s.numero === serieNum);
       serie.carga = carga;
 
-      salvarDados();
+      // Salvar ESSE treino
+      localStorage.setItem(`treino_${treinoId}_data`, JSON.stringify(treino));
     }
 
     function marcarCompleto(e) {
@@ -1051,10 +1062,14 @@
       const serieNum = parseInt(e.target.dataset.serie);
       const completo = e.target.checked;
 
-      const treino = treinos.treino_a;
+      const treinoId = document.getElementById('treino-title').getAttribute('data-treino-id');
+      const treino = treinos[treinoId];
       const ex = treino.exercicios.find(x => x.id === exId);
       const serie = ex.series.find(s => s.numero === serieNum);
       serie.completo = completo;
+
+      // Salvar ESSE treino
+      localStorage.setItem(`treino_${treinoId}_data`, JSON.stringify(treino));
 
       salvarDados();
     }
